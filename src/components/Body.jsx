@@ -1,82 +1,184 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Header from './Header';
-import { BG_IMAGE_URL } from '../utils/constant';
+import { BG_IMAGE_URL, photoURL } from '../utils/constant';
 import validate from '../utils/Validate';
+import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { auth } from '../utils/firebase';
+import {
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    updateProfile,
+} from 'firebase/auth';
+import { addUser } from '../utils/userSlice';
 
 const Body = () => {
-  
-  const [isSigning, setIsSigning] = useState(true)
-  const [validationError, setValidationError] = useState(null)
-  const email = useRef(null);
-  const password = useRef(null)
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
 
-  const handleClick = () =>{
-    const validationMsg = validate(email.current.value, password.current.value);
-    setValidationError(validationMsg)
-  }
+    const [isSigning, setIsSigning] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
 
+    const [type, setType] = useState('password');
+    const [validationError, setValidationError] = useState(null);
+
+    const email = useRef(null);
+    const password = useRef(null);
+    const userName = useRef(null);
+
+    const handleClick = () => {
+        const msg = validate(email.current.value, password.current.value,);
+        setValidationError(msg);
+        if (msg) return;
+
+        if (!isSigning) {
+            setIsLoading(true);
+            if(!userName.current.value){
+                setValidationError("All fields are required");
+                setIsLoading(false);
+                return;
+            }
+            createUserWithEmailAndPassword(
+                auth,
+                email.current.value,
+                password.current.value
+            )
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    updateProfile(user, {
+                        displayName: userName.current.value,
+                        photoURL: photoURL,
+                    })
+                        .then(() => {
+                            const { uid, displayName, photoURL } = user;
+                            dispatch(addUser({ uid : uid, displayName : displayName, photoURL : photoURL }));
+                            navigate('/browse');
+                        })
+                        .catch((error) => {
+                            // An error occurred
+                            // ...
+                        });
+                    navigate('/browse', { replace: true });
+                    setIsLoading(false);
+                })
+                .catch((error) => {
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                    setValidationError(errorMessage);
+                    setIsLoading(false);
+                });
+        } else {
+            setIsLoading(true);
+            signInWithEmailAndPassword(
+                auth,
+                email.current.value,
+                password.current.value
+            )
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    navigate('/browse', { replace: true });
+                    setIsLoading(false);
+                })
+                .catch((error) => {
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                    setValidationError(errorMessage);
+                    setIsLoading(false);
+                });
+        }
+    };
+
+    
 
     return (
         <div
             style={{
-                backgroundImage: `url(${BG_IMAGE_URL})`,
+                backgroundImage: `url(${BG_IMAGE_URL}) `,
             }}
-            className="min-h-screen bg-cover bg-center relative"
+            className="relative min-h-screen bg-center bg-cover"
         >
             <Header />
 
-            <div className="absolute min-w-3/12 p-12 bg-[#000000c8] text-white left-[50%] top-[50%] -translate-[50%] rounded-3xl">
+            <div className="absolute min-w-[380px] p-12 bg-[#000000da] text-white left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-br-4xl rounded-tl-4xl">
                 <form
                     className="flex flex-col gap-6"
                     onSubmit={(e) => e.preventDefault()}
-                    autoComplete="off"
                 >
                     <h1 className="text-2xl font-bold">
                         {isSigning ? 'Sign In' : 'Sign Up'}
                     </h1>
+
                     {!isSigning && (
                         <input
-                            className="px-4 py-2 outline-none border rounded border-gray-500 w-full"
+                            ref={userName}
                             type="text"
                             placeholder="Name"
-                            autoComplete="off"
+                            className="px-4 py-2 bg-[#000000db] outline-none border rounded border-gray-500"
                         />
                     )}
+
                     <input
-                        className="px-4 py-2 outline-none border rounded border-gray-500 w-full"
+                        ref={email}
                         type="text"
                         placeholder="Email"
-                        autoComplete="off"
-                        ref={email}
+                        className="px-4 py-2 bg-[#000000db] outline-none border rounded border-gray-500"
+                        autoComplete="new-password"
                     />
 
-                    <input
-                        className="px-4 py-2 outline-none border rounded border-gray-500 w-full "
-                        type="password"
-                        placeholder="Password"
-                        autoComplete="off"
-                        ref={password}
-                    />
+                    <div className="relative">
+                        <input
+                            ref={password}
+                            type={type}
+                            placeholder="Password"
+                            className="w-full px-4 py-2 bg-[#000000db] outline-none border rounded border-gray-500"
+                        />
+                        <i
+                            onClick={() =>
+                                type == 'password'
+                                    ? setType('text')
+                                    : setType('password')
+                            }
+                            className={`${
+                                type == 'password'
+                                    ? 'ri-eye-off-line'
+                                    : 'ri-eye-fill'
+                            } absolute right-0 top-[50%] -translate-[50%] cursor-pointer  `}
+                        ></i>
+                    </div>
 
                     {validationError && (
-                        <p className="-my-4 text-red-700">{validationError}</p>
+                        <p className="-my-3 text-[10px] text-red-600 text-sm">
+                            {validationError}
+                        </p>
                     )}
 
                     <button
                         onClick={handleClick}
-                        className="px-4 py-2 rounded bg-red-600 cursor-pointer text-white font-semibold active:scale-98"
+                        disabled={isLoading}
+                        className={`px-4 py-2 cursor-pointer active:scale-95 rounded bg-red-600 text-white font-semibold ${
+                            isLoading
+                                ? 'opacity-60 cursor-not-allowed'
+                                : 'hover:bg-red-700'
+                        }`}
                     >
-                        {isSigning ? 'Sign In' : 'Sign Up'}
+                        {isLoading
+                            ? isSigning
+                                ? 'Signing in...'
+                                : 'Signing up...'
+                            : isSigning
+                            ? 'Sign In'
+                            : 'Sign Up'}
                     </button>
                 </form>
-                <p className="text-gray-400 mt-4 font-normal">
+
+                <p className="mt-4 text-gray-400">
                     {isSigning ? 'New to NetflixGPT?' : 'Already Registered?'}{' '}
-                    <button
+                    <span
                         onClick={() => setIsSigning(!isSigning)}
-                        className="text-white font-semibold cursor-pointer"
+                        className="font-semibold text-white cursor-pointer"
                     >
                         {isSigning ? 'Sign Up' : 'Sign In'}
-                    </button>
+                    </span>
                 </p>
             </div>
         </div>

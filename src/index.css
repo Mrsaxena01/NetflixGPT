@@ -1,9 +1,24 @@
-@import "tailwindcss";
-
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Rajdhani:wght@300;400;500;600;700&display=swap');
 
-*{
+@import 'tailwindcss';
+
+* {
     user-select: none;
-    font-family: "JetBrains Mono", monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-style: normal;
 }
+
+.card{
+    transition: 0.5s ease;
+    cursor: pointer;
+}
+
+.container:hover > :not(:hover) , .trailer{
+    opacity: 0.3;
+    filter: blur(2px);
+}
+
+.card:hover{
+    transform: scale(1.1);
+}
+
