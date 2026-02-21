@@ -1,6 +1,4 @@
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Rajdhani:wght@300;400;500;600;700&display=swap');
-
-<<<<<<< HEAD
 @import 'tailwindcss';
 
 * {
@@ -8,6 +6,7 @@
     font-family: 'JetBrains Mono', monospace;
     font-style: normal;
 }
+
 
 .card{
     transition: 0.5s ease;
@@ -23,9 +22,8 @@
     transform: scale(1.1);
 }
 
-=======
+
 *{
     font-family: "JetBrains Mono", monospace;
     font-style: normal;
 }
->>>>>>> a7a0ffd4d4b6359789764c377d3995d2544b52a0
